@@ -1,0 +1,16 @@
+Levels = 3
+Waves per level = 10
+Boss per level = 1
+Grid = x: 4, y: 6
+Nutrients = 1 per 24 ticks, Max: 50
+
+Fungi
+    + Symbiote [5] = additional nutrients pero 24 ticks
+    + Weccan [10] = crowd control (slow)
+    + Ranger [5] = hitter
+    + Doomer [15] = sweeper
+
+Bugs
+    + Crawler = medium, medium health
+    + Flyer = fast, low health, bypass Fungi
+    + Rhinosect = slow, high health

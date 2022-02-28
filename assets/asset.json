@@ -1,0 +1,67 @@
+{
+    "fungi": [
+        {
+            "file": "fungi-symbiote",
+            "idle":{
+                "frames": 4
+            },
+            "attack": {
+                "attackInterval": 0
+            },
+            "hp": 6
+        },
+        {
+            "file": "fungi-weccan",
+            "idle":{
+                "frames": 4
+            },
+            "attack": {
+                "attackInterval": 30,
+                "speed": 4,
+                "dmg": 2,
+                "slow": false,
+                "radius": 5,
+                "color": "red",
+                "reverseMax": 2
+            },
+            "hp": 6
+        },
+        {
+            "file": "fungi-doomer",
+            "idle":{
+                "frames": 4
+            },
+            "attack": {
+                "attackInterval": 55,
+                "speed": 6,
+                "dmg": 5,
+                "slow": true,
+                "radius": 10,
+                "color": "green",
+                "reverseMax": 4
+            },
+            "hp": 10
+        }
+    ],
+    "bugs": [
+        {
+            "file": "bug",
+            "frames": 4
+        }
+    ],
+    "background":[
+        { "file": "topframe" }
+    ],
+    "objects":[
+        { "file": "heart" },
+        { "file": "shovel" }
+    ],
+    "sfx":[
+        { "file": "spread.wav"},
+        { "file": "boom.wav"},
+        { "file": "dig.wav"}
+    ],
+    "bgm":[
+        { "file": "nature.wav", "loop": true}
+    ]
+}
