@@ -1,4 +1,4 @@
-![alt text](https://github.com/netervati/parazite/blob/main/assets/demo/parazytedemo.gif?raw=true)
+![alt text](https://github.com/netervati/Parazyte/blob/main/assets/demo/parazytedemo.gif)
 # Parazyte
 Swarms of bugs are invading. Protect your place with your mushroom army!
 
