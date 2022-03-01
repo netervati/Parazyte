@@ -31,10 +31,14 @@ You can play the game [here](https://netervati.itch.io/parazyte).
 
 ## Technologies
 - Vanilla Javascript
+- Howler.js
 - Html5
 - Photoshop
 - Bfxr
 - Beepbox
+
+# Credits
+- [Jorge Dias](https://all-free-download.com/font/download/k141_6918804.html#google_vignette) - for the font
 
 ## Author
 You can check my updates and other projects on the following links:
