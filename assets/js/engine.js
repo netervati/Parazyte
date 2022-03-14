@@ -1,39 +1,41 @@
 class Game{
     constructor(){
+        this._defaultRenderFPS = 4;
+        this._curRenderFPS = this._defaultRenderFPS;
         this._gamewidth = 0;
         this._gameheight = 0;
         this.settings = {
-            showGrid: false
-        }
+            showGrid: true
+        };
         this.assetJSON = {
             fungi: [],
             background: [
                 { file: 'topframe' }
             ]
-        }
-        this.wavesJSON = {}
+        };
+        this.wavesJSON = {};
         this.assetIMG = {
             fungi: [],
             background: [],
             bugs: [],
             objects: []
-        }
+        };
         this.assetAudio = {
             sfx: [],
             bgm: []
-        }
+        };
         this.globalVariables = {
             player: {
-                mana: 0,
+                mana: 20,
                 manaIndicator: 0,
                 countSymbiote: 0,
                 hp: 3,
-                /** Symbiote: 20, Weccan: 25, Doomer: 40 */
-                manaRequirement: [20,25,40]
+                /** Symbiote: 20, Weccan: 25, Doomer: 50 */
+                manaRequirement: [20,25,50]
             },
             waves: {
                 intervalPointer: 0,
-                interval: 300,
+                interval: 200,
                 loadWave: false,
                 curWave: 1,
                 curSquad: 0
@@ -44,7 +46,7 @@ class Game{
             playerActiveLanes: {
                 1:0,2:0,3:0,4:0,5:0,6:0,7:0,8:0
             }
-        }
+        };
         this.globalEvents = {
             useAssets: false,
             assetsReady: false,
@@ -52,12 +54,23 @@ class Game{
             mousePress: false,
             gameOver: false,
             gameWin: false,
-            HUDhighlight: 0
-        }
+            HUDhighlight: 0,
+            spikeDifficulty: {
+                0: false,
+                1: false,
+                2: false,
+            }
+        };
         this.gameObjects = {
             fungi: [],
             bugs: [],
             bullets: [],
+        };
+        this.totalPoints = {
+            symbiote: [0,0],
+            weccan: [0,0],
+            doomer: [0,0],
+            remainingHP: [0,0]
         }
     }
     setStage(){
@@ -71,18 +84,25 @@ class Game{
         canvas.height = this._gameheight =  576;
         canvas.style.cssText = "background-color: black; border: 3px solid white;";
         this.ctx = canvas.getContext('2d');
-        document.getElementById('box').innerHTML = "";
-        document.getElementById('box').appendChild(canvas);
+        document.getElementById('layout').innerHTML = "";
+        document.getElementById('layout').appendChild(canvas);
         this._canvasSelector = document.querySelector('canvas');
         this._canvasSelector.addEventListener('mousedown', function(e){
             getCursorPosition(this,e)
         });
-        this.assetAudio.bgm[0].play();
-        requestAnimationFrame(processor);
+
+        this.ctx.imageSmoothingEnabled = false;
+        this.ctx.drawImage( this.assetIMG.objects[4], 0, 0, 160, 32, (this._gamewidth / 2) - (320/2), (this._gameheight / 2) - (160/2), 320, 64);
+
+        this.ctx.beginPath();
+        this.ctx.fillStyle = "white";
+        this.ctx.font = "18px Helvetica";
+        this.ctx.fillText('PRESS ENTER TO START THE GAME', (this._gamewidth / 2) - (17.5*9), (this._gameheight / 2) + 32);
+        this.ctx.closePath();
     }
     async createApp(){
-        let fungidata = await fetch('assets/asset.json').then(response => response.json()).catch(error => console.log(error));
-        this.assetJSON = fungidata;
+        let assetData = await fetch('assets/asset.json').then(response => response.json()).catch(error => console.log(error));
+        this.assetJSON = assetData;
         let wavesdata = await fetch('assets/waves.json').then(response => response.json()).catch(error => console.log(error));
         this.wavesJSON = wavesdata;
         let sprites = ['fungi','background','bugs','objects','sfx','bgm'];
@@ -98,7 +118,7 @@ class Game{
                 }
                 else{
                     let checkBgm = sprites[cursor] == "bgm" ? this.assetJSON[sprites[cursor]][subcursor].loop : false;
-                    this.assetAudio[sprites[cursor]].push(new Howl({ src: [`assets/audio/${pointer}`], loop: checkBgm }),)
+                    this.assetAudio[sprites[cursor]].push(new Howl({ src: [`assets/audio/${pointer}`], loop: checkBgm, autoplay: false }),)
                 }
                 subcursor ++;
             }
@@ -111,11 +131,7 @@ class Game{
         }
         else{
             this.globalEvents.assetsReady = true;
-            let gameOverMessage = document.createElement('p');
-            gameOverMessage.innerHTML = "PRESS ENTER TO START THE GAME";
-            gameOverMessage.style.color = "white";
-            document.getElementById("box").innerHTML = "";
-            document.getElementById("box").appendChild(gameOverMessage);
+            this.setStage();
         }
         this.globalEvents.useAssets = true;
     }
@@ -141,10 +157,14 @@ class Game{
                 hp: this.assetJSON.fungi[selectedAsset].hp
             });
             if (selectedAsset == 0) this.globalVariables.player.countSymbiote ++;
-            this.globalVariables.player.mana -= manaRequirement[selectedAsset];
+            let decreasedMana = this.globalVariables.player.mana - manaRequirement[selectedAsset];
+            if (decreasedMana < 0){
+                decreasedMana = 0;
+            }
+            this.globalVariables.player.mana = decreasedMana;
             this.globalVariables.playerActiveLanes[mainY / 64] ++;
         }
-        APPGAME.globalEvents.mousePress = false;
+        this.globalEvents.mousePress = false;
     }
     removeFungi(x,y){
         const mainX = x * 64;
@@ -156,11 +176,16 @@ class Game{
                 nonRemoved.push(x);
             }
             else{
+                if (x.assetIndex == 0){
+                    this.globalVariables.player.countSymbiote--;
+                }
                 this.globalVariables.playerActiveLanes[x.y/64] --;
             }
         }
         this.gameObjects.fungi = nonRemoved;
         APPGAME.globalEvents.mousePress = false;
+        let recoverMP = this.globalVariables.player.mana + 10;
+        this.globalVariables.player.mana = recoverMP < 100 ? recoverMP : 100;
     }
     async update(){
         let gameObjects = this.gameObjects;
@@ -168,22 +193,24 @@ class Game{
         let globalVariables = this.globalVariables;
 
         if (this.globalEvents.useAssets == true){
-            for (let x of gameObjects.fungi){
-                if (x.reverseIdle == 0){
-                    x.frameX++;
-                    if (x.frameX >= assetJSON.fungi[x.assetIndex].idle.frames - 1 ) x.reverseIdle = 1;
-                }
-                else{
-                    x.frameX--;
-                    if (x.frameX <= 0 ) x.reverseIdle = 0;
+            if (this._curRenderFPS <= 0){
+                for (let x of gameObjects.fungi){
+                    if (x.reverseIdle == 0){
+                        x.frameX++;
+                        if (x.frameX >= assetJSON.fungi[x.assetIndex].idle.frames - 1 ) x.reverseIdle = 1;
+                    }
+                    else{
+                        x.frameX--;
+                        if (x.frameX <= 0 ) x.reverseIdle = 0;
+                    }
                 }
             }
         }  
         
         if (globalVariables.player.mana < 100){
             globalVariables.player.manaIndicator ++;
-            if (globalVariables.player.manaIndicator > 10){
-                let manaBonus = this.globalVariables.player.countSymbiote;
+            if (globalVariables.player.manaIndicator > 20){
+                let manaBonus = this.globalVariables.player.countSymbiote / 2.5;
                 let manaCalculate = globalVariables.player.mana + 1 + manaBonus;
                 if (manaCalculate > 100) manaCalculate = 100;
                 globalVariables.player.mana = manaCalculate;
@@ -196,7 +223,15 @@ class Game{
             globalVariables.waves.intervalPointer++;
             if (globalVariables.waves.intervalPointer == globalVariables.waves.interval) {
                 globalVariables.waves.loadWave = true;
-                console.log("NEW WAVE");
+                if (globalVariables.waves.curWave == 3){
+                    this.globalEvents.spikeDifficulty[0] = true;
+                }
+                else if (globalVariables.waves.curWave == 4){
+                    this.globalEvents.spikeDifficulty[1] = true;
+                }
+                else if (globalVariables.waves.curWave == 5){
+                    this.globalEvents.spikeDifficulty[2] = true;
+                }
             }
         }
         else{
@@ -208,10 +243,18 @@ class Game{
                     }
                     else{
                         let bugStats = [
-                            {hp: 6, speed: 2, dmg: 0.5, phase:false},
-                            {hp: 6, speed: 4, dmg: 0.5, phase:true},
-                            {hp: 10, speed: 1, dmg: 1, phase:false}
-                        ]
+                            {hp: 8, speed: 1, dmg: 0.5, phase:false},
+                            {hp: 5, speed: 2, dmg: 0.5, phase:true},
+                            {hp: 20, speed: 0.5, dmg: 1, phase:false}
+                        ];
+                        for (let i = 0; i < 3; i ++){
+                            if (this.globalEvents.spikeDifficulty[i] == true){
+                                bugStats[i].hp += 2;
+                                bugStats[i].speed += 0.5
+                                bugStats[i].dmg += 1
+                            }
+                        }
+
                         this.gameObjects.bugs.push({
                             type: bugs[globalVariables.waves.curSquad].type,
                             x: bugs[globalVariables.waves.curSquad].x * 64,
@@ -224,20 +267,40 @@ class Game{
                             hp: bugStats[bugs[globalVariables.waves.curSquad].type].hp,
                             dmg: bugStats[bugs[globalVariables.waves.curSquad].type].dmg,
                             speed: bugStats[bugs[globalVariables.waves.curSquad].type].speed,
-                            phase: bugStats[bugs[globalVariables.waves.curSquad].type].phase
+                            phase: bugStats[bugs[globalVariables.waves.curSquad].type].phase,
+                            curSlowInterval: 0,
+                            slowMaxInterval: 24,
+                            isSlowed: false
                         });
                         this.globalVariables.enemyActiveLanes[bugs[globalVariables.waves.curSquad].y] ++;
                         globalVariables.waves.curSquad++;
                     }
                 }
                 else{
-                    globalVariables.waves.curSquad = 0;
-                    globalVariables.waves.intervalPointer = 0;
-                    globalVariables.waves.loadWave = false;
-                    globalVariables.waves.curWave ++;
+                    if (this.gameObjects.bugs.length <= 0){
+                        globalVariables.waves.curSquad = 0;
+                        globalVariables.waves.intervalPointer = 0;
+                        globalVariables.waves.loadWave = false;
+                        globalVariables.waves.curWave ++;
+                    }
                 }
             }
             else{
+                let finalCountSymbiote = this.gameObjects.fungi.filter(fungi => {
+                    if (fungi.assetIndex == 0) return true;
+                });
+                let finalCountWeccan = this.gameObjects.fungi.filter(fungi => {
+                    if (fungi.assetIndex == 1) return true;
+                });
+                let finalCountDoomer = this.gameObjects.fungi.filter(fungi => {
+                    if (fungi.assetIndex == 2) return true;
+                });
+                this.totalPoints = {
+                    symbiote: [finalCountSymbiote.length, finalCountSymbiote.length * 2],
+                    weccan: [finalCountWeccan.length, finalCountWeccan.length * 3],
+                    doomer: [finalCountDoomer.length, finalCountDoomer.length * 5],
+                    remainingHP: [this.globalVariables.player.hp, this.globalVariables.player.hp * 20]
+                };
                 this.globalEvents.gameWin = true;
             }
         }
@@ -248,16 +311,27 @@ class Game{
             let bugInZone = [];
             for (let x of this.gameObjects.bugs){
                 if (x.draw == true){
-                    if (x.reverseIdle == 0){
-                        x.frameX++;
-                        if (x.frameX >= assetJSON.bugs[0].frames - 1 ) x.reverseIdle = 1;
-                    }
-                    else{
-                        x.frameX--;
-                        if (x.frameX <= 0 ) x.reverseIdle = 0;
+                    if (this._curRenderFPS <= 0){
+                        if (x.reverseIdle == 0){
+                            x.frameX++;
+                            if (x.frameX >= assetJSON.bugs[0].frames - 1 ) x.reverseIdle = 1;
+                        }
+                        else{
+                            x.frameX--;
+                            if (x.frameX <= 0 ) x.reverseIdle = 0;
+                        }
                     }
                     if (x.attacking == false){
-                        x.x -= x.speed;
+                        let moveSpeed = x.speed;
+                        if (x.isSlowed == true){
+                            moveSpeed /= 2;
+                            x.curSlowInterval++;
+                            if (x.curSlowInterval >= x.slowMaxInterval){
+                                x.curSlowInterval = 0;
+                                x.isSlowed = false;
+                            }
+                        }
+                        x.x -= moveSpeed;
                     }
                     if (x.x >= 0){
                         bugInZone.push(x);
@@ -267,8 +341,6 @@ class Game{
                         if (this.globalVariables.player.hp > 0){
                             this.globalVariables.player.hp--;
                             x.draw = false;
-                            console.log(x.y / 64, x.type);
-                            console.log(this.gameObjects.bugs)
                         }
                     }
                 }
@@ -296,7 +368,8 @@ class Game{
                                 radius: this.assetJSON.fungi[x.assetIndex].attack.radius,
                                 color: this.assetJSON.fungi[x.assetIndex].attack.color,
                                 reverseMax: this.assetJSON.fungi[x.assetIndex].attack.reverseMax,
-                                x: x.x, y: x.y, reverseSize: false, reverseCount: 0
+                                x: x.x, y: x.y, reverseSize: false, reverseCount: 0,
+                                slowEffect: this.assetJSON.fungi[x.assetIndex].attack.slow
                             });
                             this.assetAudio.sfx[x.assetIndex - 1].play();
                         }
@@ -309,16 +382,18 @@ class Game{
         /** BULLET HANDLER */
         let bulletInZone = []
         for (let x of this.gameObjects.bullets){
-            if (x.reverseSize == false){
-                x.radius -= 0.5 ;
-            }
-            else{
-                x.radius += 0.5;
-            }
-            x.reverseCount ++;
-            if (x.reverseCount == x.reverseMax){
-                x.reverseCount = 0;
-                x.reverseSize = !x.reverseSize;
+            if (this._curRenderFPS <= 0){
+                if (x.reverseSize == false){
+                    x.radius -= 0.5 ;
+                }
+                else{
+                    x.radius += 0.5;
+                }
+                x.reverseCount ++;
+                if (x.reverseCount == x.reverseMax){
+                    x.reverseCount = 0;
+                    x.reverseSize = !x.reverseSize;
+                }
             }
 
             if (x.x < this._gamewidth){
@@ -334,15 +409,57 @@ class Game{
             let gameOverMessage = document.createElement('p');
             gameOverMessage.innerHTML = "GAME OVER";
             gameOverMessage.style.color = "white";
-            document.getElementById("box").innerHTML = "";
-            document.getElementById("box").appendChild(gameOverMessage);
+            document.getElementById("layout").innerHTML = "";
+            document.getElementById("layout").appendChild(gameOverMessage);
         }
         if (this.globalEvents.gameWin == true){
             let gameWinMessage = document.createElement('p');
-            gameWinMessage.innerHTML = "CONGRATULATIONS! YOU WIN!";
+            let overallTotalPoints = this.totalPoints.symbiote[1] + this.totalPoints.weccan[1] + this.totalPoints.doomer[1] + this.totalPoints.remainingHP[1];
+            gameWinMessage.innerHTML = 
+            `
+            <p>CONGRATULATIONS! YOU WIN!<p>
+            <table style='color: white; width: 100%'>
+                <tbody>
+                    <tr>
+                        <td>Details</td>
+                        <td>Number</td>
+                        <td>Points</td>
+                    </tr>
+                    <tr>
+                        <td>Symbiotes Active</td>
+                        <td style="text-align: right">${this.totalPoints.symbiote[0]}</td>
+                        <td style="text-align: right">${this.totalPoints.symbiote[1]}</td>
+                    </tr>
+                    <tr>
+                        <td>Weccan Active</td>
+                        <td style="text-align: right">${this.totalPoints.weccan[0]}</td>
+                        <td style="text-align: right">${this.totalPoints.weccan[1]}</td>
+                    </tr>
+                    <tr>
+                        <td>Doomer Active</td>
+                        <td style="text-align: right">${this.totalPoints.doomer[0]}</td>
+                        <td style="text-align: right">${this.totalPoints.doomer[1]}</td>
+                    </tr>
+                    <tr>
+                        <td>Remaining HP</td>
+                        <td style="text-align: right">${this.totalPoints.remainingHP[0]}</td>
+                        <td style="text-align: right">${this.totalPoints.remainingHP[1]}</td>
+                    </tr>
+                    <tr>
+                        <td><br></td>
+                        <td><br></td>
+                        <td><br></td>
+                    </tr>
+                    <tr style="font-size: 18px;">
+                        <td colspan='2'>OVERALL TOTAL POINTS</td>
+                        <td style="text-align: right">${overallTotalPoints}</td>
+                    </tr>
+                </tbody>
+            </table>
+            `;
             gameWinMessage.style.color = "white";
-            document.getElementById("box").innerHTML = "";
-            document.getElementById("box").appendChild(gameWinMessage);
+            document.getElementById("layout").innerHTML = "";
+            document.getElementById("layout").appendChild(gameWinMessage);
         }
     }   
     async collisions(){
@@ -358,6 +475,9 @@ class Game{
                         (y.y == x.y && x.x > y.x && x.x <= y.x + 64)
                     ){
                         y.hp -= x.dmg;
+                        if (y.isSlowed == false){
+                            y.isSlowed = true;
+                        }
                         collided = true;
                         if (y.hp > 0){
                             bugAlive.push(y);
@@ -389,13 +509,18 @@ class Game{
                 for (let y of this.gameObjects.fungi){
                     if (y.y == x.y && x.x <= y.x && x.x + 64 >= y.x ){
                         x.attacking = true;
-                        y.hp -= x.dmg;
+                        if (this._curRenderFPS <= 0){
+                            y.hp -= x.dmg;
+                        }
                         if (y.hp > 0){
                             fungiAlive.push(y);
                         }
                         else{
                             x.attacking = false;
                             this.globalVariables.playerActiveLanes[y.y / 64]--;
+                            if (y.assetIndex == 0){
+                                this.globalVariables.player.countSymbiote--;
+                            }
                         }
                     }   
                     else{
@@ -413,7 +538,6 @@ class Game{
         let assetBackground = this.assetIMG.background;
 
         this.ctx.clearRect(0,0,this._gamewidth,this._gameheight);
-        this.ctx.imageSmoothingEnabled = false;
         if (this.settings.showGrid == true){
             for (let x = 0, xtotal = this._gamewidth; x < xtotal; x += 64){
                 for (let y = 64, ytotal = this._gameheight; y < ytotal; y += 64){
@@ -444,13 +568,19 @@ class Game{
 
             if (this.gameObjects.bugs.length > 0){
                 for (let x of this.gameObjects.bugs){
-                    this.ctx.drawImage( assetBugs[0], x.frameX * 32, x.type * 32, 32, 32, x.x, x.y, 64, 64);
+                    this.ctx.save();
+                    if (x.isSlowed == true){
+                        this.ctx.shadowBlur = 5;
+                        this.ctx.shadowColor = "white";
+                    }
+                    let frameY = this.globalEvents.spikeDifficulty[x.type] == true ? 96 : 0;
+                    this.ctx.drawImage( assetBugs[0], x.frameX * 32, (x.type * 32) + frameY, 32, 32, x.x, x.y, 64, 64);
+                    this.ctx.restore();
                 }
             }
 
             if (this.gameObjects.bullets.length > 0){
                 this.ctx.save();
-                this.ctx.filter = 'blur(1px)';
                 this.ctx.shadowBlur = 5;
                 this.ctx.shadowColor = "white";
                 for (let x of this.gameObjects.bullets){
@@ -503,9 +633,17 @@ class Game{
             this.ctx.restore();
 
             for (let x = 0, xpos = 32; x < this.globalVariables.player.hp; x ++){
-                this.ctx.drawImage( this.assetIMG.objects[0], 0, 0, 32, 32, xpos, 14, 32, 32);
+                this.ctx.drawImage( this.assetIMG.objects[0], 0, 0, 32, 32, xpos, 10, 32, 32);
                 xpos += 34;
             }
+
+            
+            this.ctx.save();
+            if (this.settings.showGrid == false){
+                this.ctx.globalAlpha = 0.5
+            }
+            this.ctx.drawImage( this.assetIMG.objects[2], 0, 0, 32, 32, 160, 14, 32, 32);
+            this.ctx.restore();
         }   
         this.ctx.beginPath();
         this.ctx.fillRect(32, 48, this.globalVariables.player.mana, 10);
@@ -513,8 +651,9 @@ class Game{
         this.ctx.closePath();
 
         this.ctx.beginPath();
-        this.ctx.font = "18px MyWebFont";
-        this.ctx.fillText(` Wave 0${this.globalVariables.waves.curWave}`, 675, 32);
+        this.ctx.font = "18px Helvetica";
+        let message = this.globalVariables.waves.curWave < 7 ? this.globalVariables.waves.curWave < 6 ? `Wave 0${this.globalVariables.waves.curWave}` : 'Final Wave!' : `Survived!`;
+        this.ctx.fillText(message, 665, 32);
         this.ctx.fillStyle = "white";
         this.ctx.closePath();
     }
@@ -531,11 +670,13 @@ function addImageProcess(src){
 
 async function processor(timestamp){
     if (APPGAME.globalEvents.gameOver == false && APPGAME.globalEvents.gameWin == false){
+        APPGAME._curRenderFPS--;
         APPGAME.update();
         APPGAME.render();
-        setTimeout(() => {
-            requestAnimationFrame(processor);
-        }, 1000 / 14);
+        if (APPGAME._curRenderFPS <= 0){
+            APPGAME._curRenderFPS = APPGAME._defaultRenderFPS;
+        }
+        requestAnimationFrame(processor);
     }
 }
 
@@ -545,12 +686,23 @@ function getCursorPosition(canvas, event) {
         let rect = canvas.getBoundingClientRect();
         let x = Math.floor(event.clientX - rect.left);
         let y = Math.floor(event.clientY - rect.top);
-
-        if (APPGAME.globalEvents.HUDhighlight == 3){
-            APPGAME.removeFungi(Math.floor(x / 64),Math.floor(y / 64));
+        x = Math.floor(x / 64);
+        y = Math.floor(y / 64);
+        
+        if (y > 0){
+            if (APPGAME.globalEvents.HUDhighlight == 3){
+                APPGAME.removeFungi(x,y);
+            }
+            else{
+                APPGAME.addFungi(x,y);
+            }
         }
         else{
-            APPGAME.addFungi(Math.floor(x / 64),Math.floor(y / 64));
+            let hudSelect = x - 4;
+            if (hudSelect >= 0 && hudSelect <= 3){
+                APPGAME.globalEvents.HUDhighlight = hudSelect;
+            }
+            APPGAME.globalEvents.mousePress = false;
         }
     }
 }
@@ -566,7 +718,8 @@ window.addEventListener("keyup", function(e){
         if (APPGAME.globalEvents.assetsReady == true){
             if (APPGAME.globalEvents.startPlaying == false){
                 APPGAME.globalEvents.startPlaying = true;
-                APPGAME.setStage();
+                APPGAME.assetAudio.bgm[0].play();
+                requestAnimationFrame(processor);
             }
         }
     }

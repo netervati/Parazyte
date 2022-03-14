@@ -9,22 +9,41 @@ Swarms of bugs are invading. Protect your place with your mushroom army!
 - 4 - Select Shovel
 - Enter - Start Game
 - Q - Show / Hide Grid
-- Mouse-click - drops selected Fungus on the field. If Shovel is selected, removes Fungus on the clicked area
+- Mouse Left-click - drops selected Fungus on the field. If Shovel is selected, removes Fungus on the clicked area. Can also be used to select fungus or shovel on the top bar
 
-## Fungus Info:
+## Fungi Info
+Fungus|HP|Cost|Damage|Reload Speed|Effects
+-----|-----|-----|-----|-----|------
+Symbiote|8|20|-|-|Bonus MP gain
+Weccan|6|25|Low|Fast|Slow Effect
+Doomer|12|50|High|Slow|-
 
-- Symbiote 
-  - Bonus MP gain
-  - Cost: 20MP
-  - HP: Low
-- Weccan 
-  - Low Damage, Fast Reload
-  - Cost: 25MP
-  - HP: Low
-- Doomer 
-  - High Damage, Slow Reload
-  - Cost: 40MP
-  - HP: High
+## Change Logs
+Fixes
+- MP bonus is reduced when Symbiote is removed
+- Resolved lag issues in later waves by updating the fps to 64 fps 
+
+Changes
+- Fungus can now be selected with mouse left-click
+- Player starts with 20 MP
+- Grid is automatically enabled
+- Doomer MP Cost updated from 40 MP to 50 MP
+- Doomer HP increased from 10 HP to 12 HP
+- Weccan attacks now apply slow effect (does not stack)
+- Weccan HP decreased from 8 HP to 6 HP
+- Symbiote MP Bonus is decreased
+- Symbiote HP increased from 6 HP to 8 HP
+- Removing fungus with the shovel recovers 10 MP
+- Bullet speed and reload are now faster
+- Bugs are now more durable and faster
+- Each bug type becomes harder to kill 2 waves after being introduced
+- Waves will now have an increased number of bug spawns
+- Number of waves increased to 6
+- Added a title art
+- Changed the heart icon to mushroom
+- Added a grid icon
+- Font style changed
+- Added an Overall Total Points breakdown after winning the game
 
 ## Link
 You can play the game [here](https://netervati.itch.io/parazyte).
@@ -37,20 +56,20 @@ You can play the game [here](https://netervati.itch.io/parazyte).
 - Bfxr
 - Beepbox
 
-# Credits
-- [Jorge Dias](https://all-free-download.com/font/download/k141_6918804.html#google_vignette) - for the font
+## Credits
+I'm more than grateful for the comment section on my [post](https://alakajam.com/14th-alakajam/1289/parazyte/) for providing me feedback to improve the game. I did my best to apply as many of the suggestions as I can. Thank you!
+
+## About
+This is an update of my 14th Alakajam entry. The game was rank 10 out of 17 in the Solo Division. Check the official [rankings](https://alakajam.com/14th-alakajam/results) for more information.
+
 
 ## Author
 You can check my updates and other projects on the following links:
-[Portfolio](https://christophertabula.herokuapp.com/),
-[Itch.io](https://netervati.itch.io/),
+[Portfolio](https://christophertabula.herokuapp.com/)
+[Itch.io](https://netervati.itch.io/)
 [Twitter](https://twitter.com/netervati)
 
 ## Support
-If you liked this app, consider supporting me by buying a coffee.
+If you like this app, consider supporting me through Ko-fi.
 
 [![N|Solid](https://cdn.ko-fi.com/cdn/kofi2.png?v=3)](https://ko-fi.com/netervati)
-
-## License
-You may use this for all purposes as long as you give credit to me.
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)

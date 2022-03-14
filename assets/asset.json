@@ -8,7 +8,7 @@
             "attack": {
                 "attackInterval": 0
             },
-            "hp": 6
+            "hp": 8
         },
         {
             "file": "fungi-weccan",
@@ -16,10 +16,10 @@
                 "frames": 4
             },
             "attack": {
-                "attackInterval": 30,
-                "speed": 4,
+                "attackInterval": 150,
+                "speed": 2,
                 "dmg": 2,
-                "slow": false,
+                "slow": true,
                 "radius": 5,
                 "color": "red",
                 "reverseMax": 2
@@ -32,15 +32,15 @@
                 "frames": 4
             },
             "attack": {
-                "attackInterval": 55,
-                "speed": 6,
+                "attackInterval": 170,
+                "speed": 4,
                 "dmg": 5,
-                "slow": true,
+                "slow": false,
                 "radius": 10,
                 "color": "green",
                 "reverseMax": 4
             },
-            "hp": 10
+            "hp": 12
         }
     ],
     "bugs": [
@@ -54,12 +54,14 @@
     ],
     "objects":[
         { "file": "heart" },
-        { "file": "shovel" }
+        { "file": "shovel" },
+        { "file": "grid" },
+        { "file": "shovel" },
+        { "file": "title" }
     ],
     "sfx":[
         { "file": "spread.wav"},
-        { "file": "boom.wav"},
-        { "file": "dig.wav"}
+        { "file": "boom.wav"}
     ],
     "bgm":[
         { "file": "nature.wav", "loop": true}
